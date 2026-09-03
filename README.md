@@ -7,9 +7,7 @@ a USB Drive using FAT32
 
 Create the following folders
 
-EFI
-|
-BOOT
+EFI -> BOOT
 
 
 
