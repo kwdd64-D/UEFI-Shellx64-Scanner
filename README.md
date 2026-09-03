@@ -1,5 +1,18 @@
 # UEFI Diagnostic USB - Native Scanner - Version 1
 
+FORMAT
+----
+
+a USB Drive using FAT32
+
+Create the following folders
+
+EFI
+|
+BOOT
+
+
+
 INSTALL
 ------- 
 use the : [sha256:4ea080ddd576117cd04f5c02d16712ea5d9249c0752214d8e4055e460d7b11e0](https://github.com/pbatard/UEFI-Shell/releases) shellx64.efi
