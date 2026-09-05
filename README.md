@@ -86,9 +86,10 @@ pnpm test
 ```
 
 The same `pnpm test` command runs in GitHub Actions for every pull request and
-push to `main`. Both the workflow and its package-script entry point require
-owner review. A release metadata mismatch fails that required CI check and must
-be corrected before the change can merge.
+push to `main`. The workflow and its package-script entry point are listed in
+`.github/CODEOWNERS`, but owner approval is not mandatory in the current
+single-maintainer policy. A release metadata mismatch fails the required CI
+check and must be corrected before the change can merge.
 
 ### Main branch protection
 
