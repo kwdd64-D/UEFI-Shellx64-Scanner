@@ -18,9 +18,12 @@ assert_line() {
 REQUIRED_CODEOWNERS="$TMP_ROOT/required-codeowners"
 cat >"$REQUIRED_CODEOWNERS" <<'EOF'
 /.github/CODEOWNERS @kwdd64-D
+/.github/main-branch-protection.evidence.json @kwdd64-D
 /.github/main-branch-protection.json @kwdd64-D
 /.github/workflows/test.yml @kwdd64-D
 /package.json @kwdd64-D
+/pnpm-lock.yaml @kwdd64-D
+/pnpm-workspace.yaml @kwdd64-D
 /tools/configure-main-branch-protection.sh @kwdd64-D
 /tools/test-validate-bundle.sh @kwdd64-D
 /tools/validate-bundle.sh @kwdd64-D

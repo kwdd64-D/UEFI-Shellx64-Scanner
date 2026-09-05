@@ -113,14 +113,14 @@ API when the rule was applied is recorded in
 
 ### Release-safety ownership
 
-Pull requests that change the workflow, branch-protection policy, package test
-entry point, release test driver, bundle validator, report validator, policy
-configuration helper, or `.github/CODEOWNERS` itself require approval from the
-designated owner listed in `.github/CODEOWNERS`. These exact paths are enumerated
-there so every executable layer of the release-safety gate is owned. This
-applies even when all automated checks pass. New commits dismiss stale
-approvals, so the owner must approve the final reviewed revision before it can
-merge.
+Pull requests that change the workflow, branch-protection policy or evidence,
+package test entry point, pnpm lock/workspace configuration, release test
+driver, bundle validator, report validator, policy configuration helper, or
+`.github/CODEOWNERS` itself require approval from the designated owner listed in
+`.github/CODEOWNERS`. These exact paths are enumerated there so every executable
+layer and install input of the release-safety gate is owned. This applies even
+when all automated checks pass. New commits dismiss stale approvals, so the
+owner must approve the final reviewed revision before it can merge.
 
 Contributors should explain why a release-safety control is changing and must
 not remove or narrow an ownership entry to avoid review. The `pnpm test`
