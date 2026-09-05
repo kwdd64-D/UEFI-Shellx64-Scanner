@@ -1,0 +1,4 @@
+# Release-safety controls require review from the repository owner.
+/.github/CODEOWNERS @kwdd64-D
+/.github/workflows/test.yml @kwdd64-D
+/tools/test-validate-bundle.sh @kwdd64-D

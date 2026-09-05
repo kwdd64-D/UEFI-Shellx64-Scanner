@@ -23,7 +23,10 @@ scanner-bundle/                 USB root; copy its contents to a FAT32 drive
         └── PUT_SHELLX64_EFI_HERE.txt
 
 tools/
-└── validate-bundle.sh           safe local layout and command check
+├── validate-bundle.sh           safe local layout and command check
+└── validate-scan-report.py      completed-scan path and size check
+
+release.ini                      canonical scanner and report-format versions
 ```
 
 The `bootx64.efi` file is intentionally not included. It is a firmware-facing
@@ -76,7 +79,73 @@ Run the local check before copying:
 sh tools/validate-bundle.sh
 ```
 
-The check does not emulate UEFI and does not replace a real boot test.
+Run the release metadata regression test with:
+
+```sh
+pnpm test
+```
+
+The same `pnpm test` command runs in GitHub Actions for every pull request and
+push to `main`. A release metadata mismatch fails that required CI check and
+must be corrected before the change can merge.
+
+### Main branch protection
+
+GitHub branch protection requires the `pnpm test` status check on `main` and
+requires the pull request branch to be up to date before merging. A pull request
+cannot merge while that check is pending or failing.
+
+The rule is enforced for repository administrators. Maintainers cannot bypass
+the required check; they must correct the failure or wait for the check to
+complete successfully.
+
+The active rule is represented by `.github/main-branch-protection.json`. A
+repository administrator can apply and verify that exact policy with GitHub CLI:
+
+```sh
+sh tools/configure-main-branch-protection.sh
+```
+
+The sanitized response captured from the authenticated GitHub branch-protection
+API when the rule was applied is recorded in
+`.github/main-branch-protection.evidence.json`.
+
+### Release-safety ownership
+
+Pull requests that change `.github/workflows/test.yml`,
+`tools/test-validate-bundle.sh`, or `.github/CODEOWNERS` require approval from
+the designated owner listed in `.github/CODEOWNERS`. This applies even when all
+automated checks pass. New commits dismiss stale approvals, so the owner must
+approve the final reviewed revision before it can merge.
+
+Contributors should explain why a release-safety control is changing and must
+not remove or narrow an ownership entry to avoid review. The `pnpm test`
+regression suite verifies both the protected paths and the branch-protection
+policy recorded in the repository.
+
+`release.ini` is the single source for release version metadata. When preparing a
+release, update it and the version text in `startup.nsh` and this README together.
+The local check fails clearly if either consumer is out of sync. The check does
+not emulate UEFI and does not replace a real boot test.
+
+After a physical scan completes, validate its summary and recursive file report:
+
+```sh
+python3 tools/validate-scan-report.py \
+  path/to/SCAN_SUMMARY.txt path/to/FILE_REPORT.txt
+```
+
+The checker accepts UTF-8 and the UTF-16 text produced by common UEFI Shell
+builds. It verifies scanner `0.1.0` and report format `1`, then checks that every
+expected static output appears in `FILE_REPORT.txt` with a plausible size.
+Conditional `12_ESP` listings are checked when present because a machine may
+legitimately expose no filesystem containing an `EFI` directory.
+
+The checker reads only version fields from `SCAN_SUMMARY.txt` and path/byte-count
+metadata from `FILE_REPORT.txt`; it does not copy or inspect raw SMBIOS, NVRAM,
+or other captured hardware contents. A passing result catches incomplete scan
+artifacts, but it does **not** replace the physical USB boot test or review of
+individual command errors on the target hardware.
 
 ## Run a scan
 
