@@ -15,6 +15,35 @@ assert_line() {
   fi
 }
 
+REQUIRED_CODEOWNERS="$TMP_ROOT/required-codeowners"
+cat >"$REQUIRED_CODEOWNERS" <<'EOF'
+/.github/CODEOWNERS @kwdd64-D
+/.github/main-branch-protection.json @kwdd64-D
+/.github/workflows/test.yml @kwdd64-D
+/package.json @kwdd64-D
+/tools/configure-main-branch-protection.sh @kwdd64-D
+/tools/test-validate-bundle.sh @kwdd64-D
+/tools/validate-bundle.sh @kwdd64-D
+/tools/validate-scan-report.py @kwdd64-D
+EOF
+
+verify_codeowners() {
+  codeowners_file=$1
+
+  while IFS= read -r required_entry; do
+    grep -Fx "$required_entry" "$codeowners_file" >/dev/null || return 1
+  done <"$REQUIRED_CODEOWNERS"
+}
+
+verify_release_entrypoints() {
+  entrypoint_root=$1
+
+  grep -Fx "        run: pnpm test" \
+    "$entrypoint_root/.github/workflows/test.yml" >/dev/null &&
+    grep -Fx '    "test": "sh tools/test-validate-bundle.sh",' \
+      "$entrypoint_root/package.json" >/dev/null
+}
+
 make_fixture() {
   fixture=$1
   mkdir -p "$fixture/tools"
@@ -62,12 +91,51 @@ sed -i 's/· Report format [^ ]* · Public beta/· Report format mismatched · P
 run_failure_case "$report_mismatch" \
   "README release heading is out of sync with release.ini"
 
-assert_line "$ROOT/.github/CODEOWNERS" \
-  "/.github/CODEOWNERS @kwdd64-D"
-assert_line "$ROOT/.github/CODEOWNERS" \
-  "/.github/workflows/test.yml @kwdd64-D"
-assert_line "$ROOT/.github/CODEOWNERS" \
-  "/tools/test-validate-bundle.sh @kwdd64-D"
+if ! verify_codeowners "$ROOT/.github/CODEOWNERS"; then
+  printf 'FAIL: .github/CODEOWNERS does not protect every release-safety control\n' >&2
+  exit 1
+fi
+
+while IFS= read -r protected_entry; do
+  weakened_codeowners="$TMP_ROOT/weakened-codeowners"
+  grep -Fvx "$protected_entry" "$ROOT/.github/CODEOWNERS" \
+    >"$weakened_codeowners"
+
+  if verify_codeowners "$weakened_codeowners"; then
+    printf 'FAIL: ownership verification accepted removal of: %s\n' \
+      "$protected_entry" >&2
+    exit 1
+  fi
+done <"$REQUIRED_CODEOWNERS"
+
+if ! verify_release_entrypoints "$ROOT"; then
+  printf 'FAIL: release-safety entry points do not invoke the protected test driver\n' >&2
+  exit 1
+fi
+
+entrypoint_fixture="$TMP_ROOT/entrypoints"
+mkdir -p "$entrypoint_fixture/.github/workflows"
+cp "$ROOT/.github/workflows/test.yml" \
+  "$entrypoint_fixture/.github/workflows/test.yml"
+cp "$ROOT/package.json" "$entrypoint_fixture/package.json"
+
+sed -i \
+  's/run: pnpm test/run: printf "checks bypassed\\n"/' \
+  "$entrypoint_fixture/.github/workflows/test.yml"
+if verify_release_entrypoints "$entrypoint_fixture"; then
+  printf 'FAIL: entry-point verification accepted a weakened workflow command\n' >&2
+  exit 1
+fi
+
+cp "$ROOT/.github/workflows/test.yml" \
+  "$entrypoint_fixture/.github/workflows/test.yml"
+sed -i \
+  's/"test": "sh tools\/test-validate-bundle.sh"/"test": "true"/' \
+  "$entrypoint_fixture/package.json"
+if verify_release_entrypoints "$entrypoint_fixture"; then
+  printf 'FAIL: entry-point verification accepted a weakened package test command\n' >&2
+  exit 1
+fi
 
 python3 - \
   "$ROOT/.github/main-branch-protection.json" \

@@ -86,8 +86,9 @@ pnpm test
 ```
 
 The same `pnpm test` command runs in GitHub Actions for every pull request and
-push to `main`. A release metadata mismatch fails that required CI check and
-must be corrected before the change can merge.
+push to `main`. Both the workflow and its package-script entry point require
+owner review. A release metadata mismatch fails that required CI check and must
+be corrected before the change can merge.
 
 ### Main branch protection
 
@@ -112,16 +113,20 @@ API when the rule was applied is recorded in
 
 ### Release-safety ownership
 
-Pull requests that change `.github/workflows/test.yml`,
-`tools/test-validate-bundle.sh`, or `.github/CODEOWNERS` require approval from
-the designated owner listed in `.github/CODEOWNERS`. This applies even when all
-automated checks pass. New commits dismiss stale approvals, so the owner must
-approve the final reviewed revision before it can merge.
+Pull requests that change the workflow, branch-protection policy, package test
+entry point, release test driver, bundle validator, report validator, policy
+configuration helper, or `.github/CODEOWNERS` itself require approval from the
+designated owner listed in `.github/CODEOWNERS`. These exact paths are enumerated
+there so every executable layer of the release-safety gate is owned. This
+applies even when all automated checks pass. New commits dismiss stale
+approvals, so the owner must approve the final reviewed revision before it can
+merge.
 
 Contributors should explain why a release-safety control is changing and must
 not remove or narrow an ownership entry to avoid review. The `pnpm test`
-regression suite verifies both the protected paths and the branch-protection
-policy recorded in the repository.
+regression suite verifies the protected paths, rejects a fixture with any
+required ownership entry removed, and checks the branch-protection policy
+recorded in the repository.
 
 `release.ini` is the single source for release version metadata. When preparing a
 release, update it and the version text in `startup.nsh` and this README together.

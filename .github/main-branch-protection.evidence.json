@@ -22,7 +22,12 @@
     "url": "https://github.com/kwdd64-D/UEFI-Shellx64-Scanner/pull/1",
     "protected_files_changed": [
       ".github/CODEOWNERS",
-      "tools/test-validate-bundle.sh"
+      ".github/main-branch-protection.json",
+      "package.json",
+      "tools/configure-main-branch-protection.sh",
+      "tools/test-validate-bundle.sh",
+      "tools/validate-bundle.sh",
+      "tools/validate-scan-report.py"
     ],
     "codeowners_errors": []
   }
