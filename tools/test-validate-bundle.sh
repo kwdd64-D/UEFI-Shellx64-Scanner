@@ -69,12 +69,16 @@ assert_line "$ROOT/.github/CODEOWNERS" \
 assert_line "$ROOT/.github/CODEOWNERS" \
   "/tools/test-validate-bundle.sh @kwdd64-D"
 
-python3 - "$ROOT/.github/main-branch-protection.json" <<'PY'
+python3 - \
+  "$ROOT/.github/main-branch-protection.json" \
+  "$ROOT/.github/main-branch-protection.evidence.json" <<'PY'
 import json
 import sys
 
 with open(sys.argv[1], encoding="utf-8") as policy_file:
     policy = json.load(policy_file)
+with open(sys.argv[2], encoding="utf-8") as evidence_file:
+    evidence = json.load(evidence_file)
 
 reviews = policy.get("required_pull_request_reviews") or {}
 expected = {
@@ -85,6 +89,24 @@ expected = {
 if any(reviews.get(key) != value for key, value in expected.items()):
     raise SystemExit(
         "FAIL: main branch protection must require one fresh code-owner approval"
+    )
+
+if evidence.get("required_pull_request_reviews") != expected:
+    raise SystemExit(
+        "FAIL: branch-protection evidence is missing the code-owner review policy"
+    )
+
+verification_pr = evidence.get("verification_pull_request") or {}
+protected_files = set(verification_pr.get("protected_files_changed") or [])
+if (
+    not verification_pr.get("url")
+    or not protected_files.intersection(
+        {".github/workflows/test.yml", "tools/test-validate-bundle.sh"}
+    )
+    or verification_pr.get("codeowners_errors") != []
+):
+    raise SystemExit(
+        "FAIL: evidence must identify an error-free PR changing a protected file"
     )
 PY
 
