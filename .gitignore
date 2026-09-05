@@ -1,0 +1,6 @@
+# Scanner output can contain identifying firmware and hardware data.
+SCANS/
+
+# Users supply their own architecture-appropriate UEFI Shell binary.
+scanner-bundle/EFI/BOOT/*.efi
+scanner-bundle/EFI/BOOT/*.EFI

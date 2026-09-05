@@ -1,0 +1,18 @@
+Directory of: FSX:\SCANS\SCAN_N
+
+00_SUMMARY\
+01_UEFI\
+02_HARDWARE\
+03_STORAGE\
+04_MEMORY\
+05_SMBIOS\
+06_BOOT\
+07_DRIVERS\
+08_ENVIRONMENT\
+10_ACPI\
+11_SECURITY\
+12_ESP\
+99_RAW\
+
+NOTICE: Fictional directory-only example. Real file sizes and machine data
+have intentionally not been included.

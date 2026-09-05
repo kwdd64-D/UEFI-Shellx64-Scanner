@@ -1,0 +1,36 @@
+UEFI Diagnostic Scan
+====================
+
+Scanner version: 0.1.0
+Report format: 1
+
+NOTICE: THIS IS FICTIONAL EXAMPLE DATA, NOT A REAL MACHINE SCAN.
+
+Scan run at:
+2099-01-01
+00:00:00
+
+Shell version:
+UEFI Interactive Shell v2.x [EXAMPLE]
+
+Scanner filesystem: FSX:
+Results directory: FSX:\SCANS\SCAN_N
+
+Native UEFI collections attempted:
+  UEFI variables / NVRAM
+  Filesystem mappings
+  UEFI device handles
+  Device tree
+  PCI enumeration
+  Memory map
+  SMBIOS
+  ACPI tables
+  Secure Boot state
+  EFI System Partition file listings
+  Boot configuration
+  UEFI drivers
+  Shell environment / command inventory
+
+Review 00_SUMMARY\FILE_REPORT.txt first. Unsupported commands remain visible
+in their corresponding output files. Review and redact all real output before
+sharing it.

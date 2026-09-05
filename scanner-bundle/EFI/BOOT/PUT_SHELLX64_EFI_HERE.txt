@@ -1,0 +1,11 @@
+Place a compatible x86-64 UEFI Shell binary in this folder and rename it:
+
+    bootx64.efi
+
+The finished removable-media path must be:
+
+    EFI\BOOT\bootx64.efi
+
+This project does not redistribute a UEFI Shell binary. Use a shell build
+appropriate for the target firmware and verify its source and integrity before
+booting it.

@@ -1,84 +1,204 @@
-# UEFI Diagnostic USB - Native Scanner - Version 1
+# UEFI Scanner Tool
 
-FORMAT
-----
+**Current release:** Scanner 0.1.0 · Report format 1 · Public beta
 
-a USB Drive using FAT32
+This project packages a no-OS UEFI Shell scanner for hardware and firmware
+inspection. Boot a FAT32 USB into an x86-64 UEFI Shell and the scanner writes a
+structured snapshot back to that same USB.
 
-Create the following folders
+The scanner is useful for hardware troubleshooting, pre-purchase or pre-sale
+inspection, comparing machines, and creating a record before or after firmware,
+memory, or driver changes.
 
-EFI -> BOOT
+The scanner is an independent companion tool. It is not affiliated with or
+endorsed by the EDK2 project or third-party UEFI Shell distributors.
 
+## Project layout
 
+```text
+scanner-bundle/                 USB root; copy its contents to a FAT32 drive
+├── startup.nsh                 auto-run UEFI Shell script
+└── EFI/
+    └── BOOT/
+        └── PUT_SHELLX64_EFI_HERE.txt
 
-INSTALL
-------- 
-use the : [sha256:4ea080ddd576117cd04f5c02d16712ea5d9249c0752214d8e4055e460d7b11e0](https://github.com/pbatard/UEFI-Shell/releases) shellx64.efi
+tools/
+└── validate-bundle.sh           safe local layout and command check
+```
 
-Rename it to:
+The `bootx64.efi` file is intentionally not included. It is a firmware-facing
+binary whose source, architecture, and integrity should be verified separately.
+Place a compatible `shellx64.efi` in `scanner-bundle/EFI/BOOT/` and rename it to
+`bootx64.efi` before copying the bundle to a USB drive.
 
-    EFI\BOOT\BOOTX64.EFI
+## Obtain a UEFI Shell
 
-Copy:
-    startup.nsh
+Users must provide their own x86-64 UEFI Shell. One source of transparent,
+prebuilt EDK2 stable images is:
 
-to the ROOT of the USB.
+- https://github.com/pbatard/UEFI-Shell/releases
 
-Final layout:
-    USB:\
-      EFI\
-        BOOT\
-          BOOTX64.EFI
-      startup.nsh
-      SCANS\
-      SCRIPTS\
+Choose the individual x64 shell binary appropriate for your machine, verify it
+using the checksums and build information published by its distributor, and
+then follow the placement instructions below. This project does not mirror or
+redistribute third-party shell binaries, so users can obtain current releases
+from their original source.
 
-BOOT
-----
-Boot the USB into the UEFI Shell. The shell will automatically locate
-startup.nsh according to the UEFI Shell startup rules.
+## Requirements
 
-The script then searches filesystem mappings FS0 through FSF for the
-filesystem that contains startup.nsh. This avoids assuming the USB is
-FS0.
+- FAT32-formatted USB drive
+- x86-64 UEFI Shell binary, commonly named `shellx64.efi`
+- Target machine with a UEFI Shell available through its firmware or boot menu
 
-WHY THIS VERSION IS DIFFERENT
------------------------------
-The previous script used CMD/Windows-style assumptions in several places.
-UEFI Shell scripting is similar to batch scripting but is NOT Windows CMD.
+No operating system, network connection, or installed driver is required while
+the scan runs.
 
-In particular:
-  - echo messages containing switch-like text should be quoted.
-  - empty echo lines are avoided.
-  - FOR loops use "for %x in ... then", followed by "endfor".
-  - index variables are referenced as %x, not %x%.
-  - UEFI Shell's set command syntax is used directly.
+## Prepare the USB
 
-OUTPUT
-------
-Each run creates:
-    SCANS\SCAN_1\
-    SCANS\SCAN_2\
-    ...
+1. Format the USB as FAT32.
+2. Copy the contents of `scanner-bundle/` to the root of the USB.
+3. Copy the UEFI Shell binary to `EFI/BOOT/`.
+4. Rename that binary to `bootx64.efi`.
+5. Confirm the final layout is:
 
-with:
-    00_SUMMARY
-    01_UEFI
-    02_HARDWARE
-    03_STORAGE
-    04_MEMORY
-    05_SMBIOS
-    06_BOOT
-    07_DRIVERS
-    08_ENVIRONMENT
-    09_RAW
+   ```text
+   USB:\
+   ├── startup.nsh
+   ├── EFI\
+   │   └── BOOT\
+   │       └── bootx64.efi
+   └── SCANS\              (created automatically)
+   ```
 
-The scanner is read-only with respect to disks, partitions, and firmware
-configuration. It does not intentionally modify NVRAM or storage.
+Run the local check before copying:
 
-NOTE
-----
-Some commands can be unavailable or return errors depending on the
-firmware implementation. Those failures should remain visible in the
-corresponding output files. Deeper EFI utilities will be added in the
-next phase.
+```sh
+sh tools/validate-bundle.sh
+```
+
+The check does not emulate UEFI and does not replace a real boot test.
+
+## Run a scan
+
+1. Insert the USB into the target machine.
+2. Open the firmware boot menu, commonly with `F12`, `F11`, `Esc`, or `Del`.
+3. Select the USB's UEFI boot entry.
+4. `startup.nsh` runs automatically from the filesystem containing the script.
+5. When the scan completes, results are in `SCANS\SCAN_N\`.
+
+The script searches `FS0:` through `FSF:` for `startup.nsh` instead of assuming
+the USB has a particular firmware-assigned filesystem letter.
+
+The scanner creates `SCAN_1` through `SCAN_9` and never overwrites an existing
+scan. After nine runs, copy or remove old scan folders before running again.
+
+## Captured data
+
+Each scan contains:
+
+| Folder | Contents |
+| --- | --- |
+| `00_SUMMARY` | Run summary and recursive file report |
+| `01_UEFI` | Shell version, console mode, filesystem mappings, NVRAM dump |
+| `02_HARDWARE` | Devices, device tree, handles/protocols, PCI enumeration |
+| `03_STORAGE` | Refreshed and verbose filesystem maps, storage candidates |
+| `04_MEMORY` | Firmware memory map |
+| `05_SMBIOS` | Motherboard, CPU, memory, serial, and asset information |
+| `06_BOOT` | Boot configuration and BootOrder/BootNext/BootCurrent |
+| `07_DRIVERS` | Loaded UEFI drivers and device list |
+| `08_ENVIRONMENT` | Shell variables, aliases, and available commands |
+| `10_ACPI` | ACPI dump, installed table list, and selected table captures |
+| `11_SECURITY` | Secure Boot variables including `SecureBoot`, `SetupMode`, `PK`, `KEK`, `db`, and `dbx` |
+| `12_ESP` | Recursive `EFI` listings for detected filesystems |
+| `99_RAW` | Unfiltered duplicate captures for cross-reference |
+
+## Read results safely
+
+Start with `00_SUMMARY\FILE_REPORT.txt`. A command's output size is a useful
+first signal:
+
+- A structured file with meaningful size usually indicates the command returned
+  data.
+- A zero-byte or very small file often contains a command error caused by a
+  missing command or firmware-specific syntax.
+- `PK`, `KEK`, `db`, and `dbx` can legitimately be small or absent on systems
+  without provisioned Secure Boot keys.
+- `12_ESP` sizes depend on how many EFI files are present.
+
+The script intentionally writes each command's output to its own file. A
+firmware that lacks a command should leave an error in that file rather than
+stopping the rest of the scan.
+
+## ACPI and WPBT
+
+Read `10_ACPI/WPBT.txt` as content, not just as a file-size check. If it says
+`Requested ACPI Table not found`, the system did not expose a WPBT table.
+
+If a real WPBT dump is present, it can describe a firmware-registered Windows
+binary and its arguments. The scanner only reads firmware data; it does not
+modify ACPI tables, NVRAM, or Secure Boot state. To inspect the extracted
+Windows-side binary, check `%SystemRoot%\System32\wpbbin.exe` after booting
+Windows and review its signature and publisher.
+
+## Known limitations
+
+- UEFI Shell command availability varies by firmware build. `acpiview` may not
+  exist at all.
+- Command flags are intentionally conservative because syntax differs between
+  shell builds.
+- Filesystem letters such as `FS0:` are not stable identifiers between boots or
+  machines. Cross-reference the mapping files for a specific scan.
+- Quoted `echo` output is clean on standard EDK2-derived shells. Some alternate
+  shell implementations may display literal quote characters; this affects
+  cosmetic console text only.
+- The script supports nine scan folders per USB and stops rather than
+  overwriting old results.
+
+## Privacy
+
+Do not publish raw scan folders without review. SMBIOS and raw NVRAM captures can
+contain serial numbers, UUIDs, asset tags, vendor data, and boot configuration.
+ESP listings reveal installed operating systems and boot files. A populated
+WPBT capture may reveal a firmware-registered binary and memory address.
+
+Redact identifying values before sharing scan output publicly.
+
+The material under `examples/` is fictional and intentionally contains no scan
+from a real machine. Use it to understand the format, not as diagnostic data.
+
+## Feedback and bug reports
+
+Feedback from different firmware vendors and machine generations is welcome.
+When opening an issue, include only what you are comfortable publishing:
+
+- computer or motherboard model, if appropriate
+- firmware vendor and UEFI version
+- UEFI Shell release or source
+- whether the USB booted and the scan reached `SCAN COMPLETE`
+- the name of any output file containing an error
+- the smallest relevant, reviewed excerpt of that error
+
+Do not attach a complete raw scan by default. Review every file first and redact
+serial numbers, UUIDs, asset tags, network identifiers, storage identifiers,
+NVRAM values, boot configuration, and other identifying data.
+
+See `CONTRIBUTING.md` for a concise report template.
+
+## Verification status
+
+The bundle layout and script contents can be checked locally with
+`tools/validate-bundle.sh`. Actual boot behavior must be validated on target
+hardware with a compatible UEFI Shell binary; this development environment
+cannot emulate firmware or execute `.nsh` scripts.
+
+The current release has been exercised on two x86-64 UEFI machines from
+different platform and firmware generations. It should be treated as a public
+beta rather than a claim of universal firmware compatibility.
+
+## License
+
+The scanner script, documentation, examples, and validation helper are released
+under the MIT License. See `LICENSE`.
+
+Third-party UEFI Shell binaries are not part of this project and remain subject
+to their own licenses.
