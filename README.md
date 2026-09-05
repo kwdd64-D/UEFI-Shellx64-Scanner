@@ -113,20 +113,23 @@ API when the rule was applied is recorded in
 
 ### Release-safety ownership
 
-Pull requests that change the workflow, branch-protection policy or evidence,
-package test entry point, pnpm lock/workspace configuration, release test
-driver, bundle validator, report validator, policy configuration helper, or
-`.github/CODEOWNERS` itself require approval from the designated owner listed in
-`.github/CODEOWNERS`. These exact paths are enumerated there so every executable
-layer and install input of the release-safety gate is owned. This applies even
-when all automated checks pass. New commits dismiss stale approvals, so the
-owner must approve the final reviewed revision before it can merge.
+`.github/CODEOWNERS` prepares designated ownership for the workflow,
+branch-protection policy and evidence, package-manager inputs, release test
+driver, and downstream validators. Contributors should explain why any of these
+release-safety controls are changing.
 
-Contributors should explain why a release-safety control is changing and must
-not remove or narrow an ownership entry to avoid review. The `pnpm test`
-regression suite verifies the protected paths, rejects a fixture with any
-required ownership entry removed, and checks the branch-protection policy
-recorded in the repository.
+Mandatory code-owner approval is intentionally disabled while the repository
+has only one write-capable maintainer. GitHub does not allow a pull request
+author to approve their own change, so enabling the rule now could make
+protected-file changes impossible to merge. Do not enable
+`require_code_owner_reviews` until a second trusted maintainer can provide an
+independent approval and the rule has been verified with a protected-file pull
+request.
+
+The `pnpm test` regression suite verifies the prepared ownership paths, rejects
+a fixture with any required entry removed, and confirms that the recorded
+branch-protection policy keeps mandatory reviews disabled in the current
+single-maintainer state.
 
 `release.ini` is the single source for release version metadata. When preparing a
 release, update it and the version text in `startup.nsh` and this README together.

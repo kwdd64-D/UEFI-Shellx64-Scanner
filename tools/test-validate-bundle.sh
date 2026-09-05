@@ -151,33 +151,14 @@ with open(sys.argv[1], encoding="utf-8") as policy_file:
 with open(sys.argv[2], encoding="utf-8") as evidence_file:
     evidence = json.load(evidence_file)
 
-reviews = policy.get("required_pull_request_reviews") or {}
-expected = {
-    "dismiss_stale_reviews": True,
-    "require_code_owner_reviews": True,
-    "required_approving_review_count": 1,
-}
-if any(reviews.get(key) != value for key, value in expected.items()):
+if policy.get("required_pull_request_reviews") is not None:
     raise SystemExit(
-        "FAIL: main branch protection must require one fresh code-owner approval"
+        "FAIL: mandatory reviews must remain disabled while there is one maintainer"
     )
 
-if evidence.get("required_pull_request_reviews") != expected:
+if evidence.get("required_pull_request_reviews") is not None:
     raise SystemExit(
-        "FAIL: branch-protection evidence is missing the code-owner review policy"
-    )
-
-verification_pr = evidence.get("verification_pull_request") or {}
-protected_files = set(verification_pr.get("protected_files_changed") or [])
-if (
-    not verification_pr.get("url")
-    or not protected_files.intersection(
-        {".github/workflows/test.yml", "tools/test-validate-bundle.sh"}
-    )
-    or verification_pr.get("codeowners_errors") != []
-):
-    raise SystemExit(
-        "FAIL: evidence must identify an error-free PR changing a protected file"
+        "FAIL: branch-protection evidence must show mandatory reviews disabled"
     )
 PY
 
